@@ -1,0 +1,12 @@
+[package]
+name = "wgpu-bindutils"
+description = "A WGPU wrapper to keep Bind Groups organized, type-safe and less error-prone"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+wgpu-bindutils-core = "0.1.0"
+wgpu-bindutils-macro = "0.1.0"

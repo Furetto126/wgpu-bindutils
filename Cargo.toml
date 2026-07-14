@@ -1,0 +1,15 @@
+[workspace]
+resolver = "2"
+members = [
+    "wgpu-bindutils",
+    "wgpu-bindutils-core",
+    "wgpu-bindutils-macro",
+    "wgpu-bindutils-test"
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/Furetto126/wgpu-bindutils.git"
+authors = ["Furetto126"]

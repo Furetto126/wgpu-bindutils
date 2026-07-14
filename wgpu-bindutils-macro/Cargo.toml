@@ -1,0 +1,18 @@
+[package]
+name = "wgpu-bindutils-macro"
+description = "Derive macro for the wgpu-bindutils crate"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+[lib]
+proc-macro = true
+
+[dependencies]
+wgpu-bindutils-core = "0.1.0"
+darling = "0.23.0"
+proc-macro2 = "1.0.106"
+quote = "1.0.46"
+syn = { version = "2.0.118", features = ["full", "extra-traits"] }
+proc-macro-crate = "3.5.0"
