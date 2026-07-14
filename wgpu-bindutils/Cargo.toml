@@ -8,5 +8,5 @@ repository.workspace = true
 authors.workspace = true
 
 [dependencies]
-wgpu-bindutils-core = "0.1.0"
-wgpu-bindutils-macro = "0.1.0"
+wgpu-bindutils-core = { path = "../wgpu-bindutils-core", version = "0.1.0" }
+wgpu-bindutils-macro = { path = "../wgpu-bindutils-macro", version = "0.1.0" }
