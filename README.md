@@ -1,4 +1,5 @@
 # wgpu-bindutils
+[![Rust](https://github.com/Furetto126/wgpu-bindutils/actions/workflows/rust.yml/badge.svg?branch=main)](https://github.com/Furetto126/wgpu-bindutils/actions/workflows/rust.yml)
 
 A wgpu wrapper around `BindGroup` and `BindGroupLayout` focused on type-safety and ease of use.
 
