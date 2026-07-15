@@ -1,0 +1,5 @@
+error: Binding 0 is already taken by another BindableField
+  --> tests/ui/fail/binding_non_unique.rs:12:9
+   |
+12 |     t2: BindableBuffer<u64>
+   |         ^^^^^^^^^^^^^^

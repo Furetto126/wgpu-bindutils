@@ -1,0 +1,5 @@
+error: expected integer literal
+ --> tests/ui/fail/binding_floating.rs:9:15
+  |
+9 |     #[binding(0.5)]
+  |               ^^^

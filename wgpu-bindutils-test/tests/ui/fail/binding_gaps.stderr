@@ -1,0 +1,7 @@
+error: Bindings were not contiguous (should be `0..1`)
+ --> tests/ui/fail/binding_gaps.rs:6:10
+  |
+6 | #[derive(BindableStruct)]
+  |          ^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the derive macro `BindableStruct` (in Nightly builds, run with -Z macro-backtrace for more info)

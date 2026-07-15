@@ -1,0 +1,5 @@
+error: A BindableField must have explicit binding with `#[binding(n)]`
+ --> tests/ui/fail/no_binding_on_bindable_field.rs:9:8
+  |
+9 |     t: BindableBuffer<f32>
+  |        ^^^^^^^^^^^^^^

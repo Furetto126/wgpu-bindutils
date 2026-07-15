@@ -1,23 +1,11 @@
+use std::collections::{BTreeSet, HashSet};
+
 use proc_macro::TokenStream;
 use proc_macro_crate::{FoundCrate, crate_name};
 use proc_macro2::TokenStream as TokenStream2;
 use syn::{DeriveInput, parse_macro_input};
 use quote::{format_ident, quote};
 use darling::{FromDeriveInput, FromField};
-
-/*
-#[derive(BindableStruct)]
-#[visibility(FRAGMENT)] // Sets the default visibility of the entire struct
-struct MyBindGroup {
-    #[binding(0)] // Sets the binding of the resource, can only be placed on Bindables
-    #[visibility(COMPUTE)] // Adds to the struct's default visibility just for this field
-    pub buffer: BindableBuffer<f32, BufStorage<false>>,
-    #[binding(1)]
-    pub texture: BindableTexture<TexStorage<Rgba32Float, ReadWrite, D2>>,
-    #[binding(2)]
-    pub sampler: BindableSampler<Filtering>
-}*/
-
 
 #[proc_macro_derive(BindableStruct, attributes(visibility, binding))]
 pub fn bindable_struct_derive(input: TokenStream) -> TokenStream {
@@ -112,52 +100,94 @@ fn expand(opts: StructOpts) -> Result<TokenStream2, darling::Error> {
         return Err(darling::Error::multiple(errors));
     }
 
-    // ... and check if they are actually bindable.
-    let assertions = bindable_fields.iter().map(|f| {
+    // Check for contiguous, unique bindings
+    // -------------------------------------
+    let mut bindings_taken = BTreeSet::new();
+    for f in &bindable_fields {
+        let binding = f.get_binding().unwrap().unwrap();
+        let Ok(parsed) = binding.base10_parse::<u32>() else {
+            errors.push(darling::Error::custom(format!("Binding {} is not a valid base-10 positive integer", binding)).with_span(&f.ty));
+            continue;
+        };
+
+        if !bindings_taken.insert(parsed) {
+            errors.push(darling::Error::custom(format!("Binding {} is already taken by another BindableField", binding)).with_span(&f.ty));
+        }
+    }
+
+    if !(0..bindings_taken.len() as u32).all(|x| bindings_taken.contains(&x)) {
+        errors.push(darling::Error::custom(format!("Bindings were not contiguous (should be `0..{}`)", bindings_taken.len() as u32 - 1)));
+    }
+
+    if !errors.is_empty() {
+        return Err(darling::Error::multiple(errors));
+    }
+    
+    let mut assertions = vec![];
+    for f in &bindable_fields {
         let ty = &f.ty;
-        let field_name = f.ident.as_ref().ok_or_else(|| darling::Error::custom("Can only bind a named field"))?;
+        let Some(field_name) = f.ident.as_ref() else {
+            errors.push(darling::Error::custom("Can only bind a named field").with_span(&f.ty));
+            continue;
+        };
         let assert_fn_name = format_ident!("{}_must_impl_BindableField", field_name);
 
-        Ok(quote! {
+        assertions.push(quote! {
             #[allow(non_snake_case)]
             const _: fn() = || {
                 fn #assert_fn_name<T: #crate_path::prelude::BindableField>() {}
                 #assert_fn_name::<#ty>();
             };
-        })
-    }).collect::<Result<Vec<_>, darling::Error>>()?;
+        });
+    }
+
+    if !errors.is_empty() {
+        return Err(darling::Error::multiple(errors));
+    }
     
-    let layout_entries = bindable_fields.iter().map(|f| {
+    let mut layout_entries = vec![];
+    for f in &bindable_fields {
         let ty = &f.ty;
-        let binding = f.get_binding()?;
-        let binding = binding.as_ref().ok_or_else(|| darling::Error::custom("Bindable field must have explicit binding"))?;
-        let visibility = match &f.get_visibility()? {
-            Some(v) => v.clone(),
+        let binding = f.get_binding().unwrap().unwrap();
+        
+        let visibility = match f.get_visibility().unwrap().clone() {
+            Some(v) => v,
             None => {
                 if misses_default_visibility {
-                    return Err(darling::Error::custom(
+                    errors.push(darling::Error::custom(
                         "Bindable field had no explicit visibility declaration on a BindableStruct with no explicit visibility declaration"
                     ).with_span(&f.ty));
+                    continue;
                 }
-
                 default_visibility.clone()
-            }
+            },
         };
 
-        Ok(quote! {
+        layout_entries.push(quote! {
             <#ty as #crate_path::prelude::BindableField>::layout_entry(#binding, #visibility)
-        })
-    }).collect::<Result<Vec<_>, darling::Error>>()?;
+        });
+    }
 
-    let bind_entries = bindable_fields.iter().map(|f| {
-        let ident = f.ident.as_ref().ok_or_else(|| darling::Error::custom("Unnamed Bindable fields are not supported"))?;
-        let binding = f.get_binding()?;
-        let binding = binding.as_ref().ok_or_else(|| darling::Error::custom("Bindable field must have explicit binding"))?;
+    if !errors.is_empty() {
+        return Err(darling::Error::multiple(errors));
+    }
 
-        Ok(quote! {
+    let mut bind_entries = vec![];
+    for f in &bindable_fields {
+        let Some(ref ident) = f.ident else {
+            errors.push(darling::Error::custom("Unnamed Bindable fields are not supported").with_span(&f.ty));
+            continue;
+        };
+        let binding = f.get_binding().unwrap().unwrap();
+
+        bind_entries.push(quote! {
             #crate_path::prelude::BindableField::bind_group_entry(&self.#ident, #binding)
-        })
-    }).collect::<Result<Vec<_>, darling::Error>>()?;
+        });
+    }
+
+    if !errors.is_empty() {
+        return Err(darling::Error::multiple(errors));
+    }
 
     let impl_block = quote! {
         impl #impl_generics #crate_path::prelude::BindableStruct for #name #ty_generics #where_clause {
@@ -191,9 +221,6 @@ struct StructOpts {
     generics: syn::Generics,
     data: darling::ast::Data<darling::util::Ignored, FieldOpts>,
     attrs: Vec<syn::Attribute>,
-
-    /*#[darling(default)]
-    visibility: Option<syn::Expr>*/
 }
 
 impl StructOpts {
@@ -211,11 +238,6 @@ struct FieldOpts {
     ident: Option<syn::Ident>,
     ty: syn::Type,
     attrs: Vec<syn::Attribute>,
-
-    /*#[darling(default)]
-    binding: Option<syn::LitInt>,
-    #[darling(default)]
-    visibility: Option<syn::Expr>*/
 }
 
 impl FieldOpts {

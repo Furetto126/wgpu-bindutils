@@ -1,0 +1,5 @@
+error: #[binding] can only be applied to a BindableField
+  --> tests/ui/fail/binding_on_non_bindable_field.rs:10:8
+   |
+10 |     t: f32
+   |        ^^^

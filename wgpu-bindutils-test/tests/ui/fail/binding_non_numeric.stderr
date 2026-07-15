@@ -1,0 +1,5 @@
+error: expected integer literal
+ --> tests/ui/fail/binding_non_numeric.rs:9:15
+  |
+9 |     #[binding("NaN")]
+  |               ^^^^^

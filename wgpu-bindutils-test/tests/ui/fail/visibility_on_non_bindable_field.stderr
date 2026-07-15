@@ -1,0 +1,5 @@
+error: #[visibility] can only be applied to a BindableField
+ --> tests/ui/fail/visibility_on_non_bindable_field.rs:9:8
+  |
+9 |     t: f32
+  |        ^^^

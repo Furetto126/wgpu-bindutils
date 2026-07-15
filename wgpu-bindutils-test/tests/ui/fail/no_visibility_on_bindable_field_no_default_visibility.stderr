@@ -1,0 +1,5 @@
+error: Bindable field had no explicit visibility declaration on a BindableStruct with no explicit visibility declaration
+ --> tests/ui/fail/no_visibility_on_bindable_field_no_default_visibility.rs:9:8
+  |
+9 |     t: BindableBuffer<f32>
+  |        ^^^^^^^^^^^^^^

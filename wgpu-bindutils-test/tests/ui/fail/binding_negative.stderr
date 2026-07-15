@@ -1,0 +1,5 @@
+error: Binding -1i32 is not a valid base-10 positive integer
+  --> tests/ui/fail/binding_negative.rs:10:8
+   |
+10 |     t: BindableBuffer<f32>
+   |        ^^^^^^^^^^^^^^
