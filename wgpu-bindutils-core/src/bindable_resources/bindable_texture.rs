@@ -25,21 +25,25 @@ pub mod tex_opts {
         pub trait TexFormat { 
             const FORMAT: wgpu::TextureFormat;
             const SAMPLE_TYPE: wgpu::TextureSampleType;
+            const BYTES_PER_PIXEL: u32;
         }
         pub struct Rgba8Unorm<const FILTERABLE: bool>;
         impl<const FILTERABLE: bool> TexFormat for Rgba8Unorm<FILTERABLE> {
             const FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8Unorm;
             const SAMPLE_TYPE: wgpu::TextureSampleType = wgpu::TextureSampleType::Float { filterable: FILTERABLE };
+            const BYTES_PER_PIXEL: u32 = 4;
         }
         pub struct Rgba32Float;
         impl TexFormat for Rgba32Float {
             const FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba32Float;
             const SAMPLE_TYPE: wgpu::TextureSampleType = wgpu::TextureSampleType::Float { filterable: false };
+            const BYTES_PER_PIXEL: u32 = 16;
         }
         pub struct R32Uint;
         impl TexFormat for R32Uint {
             const FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::R32Uint;
             const SAMPLE_TYPE: wgpu::TextureSampleType = wgpu::TextureSampleType::Uint;
+            const BYTES_PER_PIXEL: u32 = 4;
         }
     }
 
@@ -98,6 +102,7 @@ pub mod tex_opts {
 
 use tex_opts::*;
 
+/// The implementation of [BindableField] for a [wgpu::Texture] binding resource.
 pub struct BindableTexture<Kind: kind::TextureKind> {
     pub texture: wgpu::Texture,
     pub view: wgpu::TextureView,
@@ -105,6 +110,7 @@ pub struct BindableTexture<Kind: kind::TextureKind> {
 }
 
 impl<F: fmt::TexFormat, D: dim::Dimension, const MS: bool> BindableTexture<kind::TexSampled<F, D, MS>> {
+    /// Create a [`BindableTexture`] with a specified size.
     pub fn new_sampled(device: &wgpu::Device, size: wgpu::Extent3d, label: Option<&str>) -> Self {
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             label,
@@ -118,19 +124,68 @@ impl<F: fmt::TexFormat, D: dim::Dimension, const MS: bool> BindableTexture<kind:
         });
 
         let view = texture.create_view(&wgpu::TextureViewDescriptor {
+            format: Some(F::FORMAT),
             dimension: Some(D::VIEW_DIMENSION),
             ..Default::default()
         });
 
-        Self {
-            texture,
-            view,
-            _kind: std::marker::PhantomData,
-        }
+        Self { texture, view, _kind: std::marker::PhantomData, }
+    }
+
+    /// Create a BindableTexture from an existing [`wgpu::Texture`].
+    /// 
+    /// Note that this will **panic** if the supplied texture does not match the [`BindableTexture`]'s type signature.
+    pub fn from_sampled(texture: &wgpu::Texture) -> Self {
+        Self::check_validity(texture);
+
+        let view = texture.create_view(&wgpu::TextureViewDescriptor {
+            format: Some(F::FORMAT),
+            dimension: Some(D::VIEW_DIMENSION),
+            ..Default::default()
+        });
+
+        Self { texture: texture.clone(), view, _kind: std::marker::PhantomData, }
+    }
+
+    /// Updates the underlying [`wgpu::Texture`] using a &\[u8\] as pixel data.
+    /// 
+    /// Note that this will **panic** if the supplied pixel data does not match the number of bytes
+    /// the [`BindableTexture`] expects.
+    pub fn update(&self, queue: &wgpu::Queue, size: wgpu::Extent3d, data: &[u8]) {
+        let expected_bytes = F::BYTES_PER_PIXEL * size.width * size.height * size.depth_or_array_layers;
+        assert_eq!(
+            data.len() as u32, expected_bytes,
+            "Data length does not match expected size for this BindableTexture\n\nExpected: {}\nReceived: {}", data.len(), expected_bytes  
+        );
+
+        queue.write_texture(
+            wgpu::TexelCopyTextureInfo {
+                texture: &self.texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            data,
+            wgpu::TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(size.width * F::BYTES_PER_PIXEL),
+                rows_per_image: Some(size.height)
+            },
+            size
+        );
+    }
+    
+    // Assert validity
+    fn check_validity(texture: &wgpu::Texture) {
+        assert_eq!(texture.format(), F::FORMAT, "Texture format ({:?}) does not match TexSampled<F, ..>", texture.format());
+        assert_eq!(texture.dimension(), D::physical_dimension(), "Texture dimension ({:?}) does not match TexSampled<.., D, ..>", texture.dimension());
+        assert_eq!(texture.sample_count() > 1, MS, "Texture multisample state ({}) does not match TexSampled<.., MS>", texture.sample_count() > 1);
+        assert_eq!(texture.usage(), kind::TexSampled::<F, D, MS>::usage(), "Texture usage ({:?}) does not match TexSampled<F, D, MS>: {:?}", texture.usage(), kind::TexSampled::<F, D, MS>::usage());
     }
 }
 
 impl<F: fmt::TexFormat, A: access::StorageAccess, D: dim::Dimension> BindableTexture<kind::TexStorage<F, A, D>> {
+    /// Create a [`BindableTexture`] with a specified size.
     pub fn new_storage(device: &wgpu::Device, size: wgpu::Extent3d, label: Option<&str>) -> Self {
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             label,
@@ -144,6 +199,7 @@ impl<F: fmt::TexFormat, A: access::StorageAccess, D: dim::Dimension> BindableTex
         });
 
         let view = texture.create_view(&wgpu::TextureViewDescriptor {
+            format: Some(F::FORMAT),
             dimension: Some(D::VIEW_DIMENSION),
             ..Default::default()
         });
@@ -153,6 +209,56 @@ impl<F: fmt::TexFormat, A: access::StorageAccess, D: dim::Dimension> BindableTex
             view,
             _kind: std::marker::PhantomData,
         }
+    }
+
+    /// Create a BindableTexture from an existing [`wgpu::Texture`].
+    /// 
+    /// Note that this will **panic** if the supplied texture does not match the [`BindableTexture`]'s type signature.
+    pub fn from_storage(texture: &wgpu::Texture) -> Self {
+        Self::check_validity(texture);
+
+        let view = texture.create_view(&wgpu::TextureViewDescriptor {
+            format: Some(F::FORMAT),
+            dimension: Some(D::VIEW_DIMENSION),
+            ..Default::default()
+        });
+
+        Self { texture: texture.clone(), view, _kind: std::marker::PhantomData, }
+    }
+
+    /// Updates the underlying [`wgpu::Texture`] using a &\[u8\] as pixel data.
+    /// 
+    /// Note that this will **panic** if the supplied pixel data does not match the number of bytes
+    /// the [`BindableTexture`] expects.
+    pub fn update(&self, queue: &wgpu::Queue, size: wgpu::Extent3d, data: &[u8]) {
+        let expected_bytes = F::BYTES_PER_PIXEL * size.width * size.height * size.depth_or_array_layers;
+        assert_eq!(
+            data.len() as u32, expected_bytes,
+            "Data length does not match expected size for this BindableTexture\n\nExpected: {}\nReceived: {}", data.len(), expected_bytes  
+        );
+
+        queue.write_texture(
+            wgpu::TexelCopyTextureInfo {
+                texture: &self.texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            data,
+            wgpu::TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(size.width * F::BYTES_PER_PIXEL),
+                rows_per_image: Some(size.height)
+            },
+            size
+        );
+    }
+
+    // Assert validity
+    fn check_validity(texture: &wgpu::Texture) {
+        assert_eq!(texture.format(), F::FORMAT, "Texture format ({:?}) does not match TexStorage<F, ..>", texture.format());
+        assert_eq!(texture.dimension(), D::physical_dimension(), "Texture dimension ({:?}) does not match TexStorage<.., D>", texture.dimension());
+        assert_eq!(texture.usage(), kind::TexStorage::<F, A, D>::usage(), "Texture usage ({:?}) does not match TexStorage<F, A, D> ({:?})", texture.usage(), kind::TexStorage::<F, A, D>::usage());
     }
 }
 
@@ -174,23 +280,25 @@ impl<Kind: kind::TextureKind> BindableField for BindableTexture<Kind> {
     }
 }
 
-pub struct BindableTextureArray<const COUNT: usize, Kind: kind::TextureKind> {
-    textures: [wgpu::Texture; COUNT],
-    views: Box<[wgpu::TextureView; COUNT]>, // SAFETY: This CANNOT be reassigned once initialized!
-    view_refs: UnsafeCell<[&'static wgpu::TextureView; COUNT]>,
+/// The implementation of [BindableField] for an array of [`wgpu::Texture`] binding resources.
+pub struct BindableTextureArray<const MAX_TEXTURES: usize, Kind: kind::TextureKind> {
+    textures: [wgpu::Texture; MAX_TEXTURES],
+    views: Box<[wgpu::TextureView; MAX_TEXTURES]>, // SAFETY: This CANNOT be reassigned once initialized!
+    view_refs: UnsafeCell<[&'static wgpu::TextureView; MAX_TEXTURES]>,
     _kind: std::marker::PhantomData<Kind>
 }
 
-impl<const COUNT: usize, F: fmt::TexFormat, D: dim::Dimension, const MS: bool>
-    BindableTextureArray<COUNT, kind::TexSampled<F, D, MS>> {
+impl<const MAX_TEXTURES: usize, F: fmt::TexFormat, D: dim::Dimension, const MS: bool>
+    BindableTextureArray<MAX_TEXTURES, kind::TexSampled<F, D, MS>> {
+    /// Create a [`BindableTextureArray`] where each [`wgpu::Texture`] has the specified size.
     pub fn new_sampled(
         device: &wgpu::Device,
         size: wgpu::Extent3d,
         label: Option<&str>
     ) -> Self {
-        let mut textures  = Vec::with_capacity(COUNT);
-        let mut views_vec = Vec::with_capacity(COUNT);
-        for _ in 0..COUNT {
+        let mut textures  = Vec::with_capacity(MAX_TEXTURES);
+        let mut views_vec = Vec::with_capacity(MAX_TEXTURES);
+        for _ in 0..MAX_TEXTURES {
             let texture = device.create_texture(&wgpu::TextureDescriptor {
                 label,
                 size,
@@ -211,9 +319,9 @@ impl<const COUNT: usize, F: fmt::TexFormat, D: dim::Dimension, const MS: bool>
             views_vec.push(view);
         }
 
-        let views: Box<[wgpu::TextureView; COUNT]> = Box::new(views_vec.try_into().unwrap());
-        let refs: [&wgpu::TextureView; COUNT] = views.each_ref();
-        let refs_static: [&'static wgpu::TextureView; COUNT] =
+        let views: Box<[wgpu::TextureView; MAX_TEXTURES]> = Box::new(views_vec.try_into().unwrap());
+        let refs: [&wgpu::TextureView; MAX_TEXTURES] = views.each_ref();
+        let refs_static: [&'static wgpu::TextureView; MAX_TEXTURES] =
             unsafe { std::mem::transmute(refs) };
 
         Self {
@@ -224,22 +332,64 @@ impl<const COUNT: usize, F: fmt::TexFormat, D: dim::Dimension, const MS: bool>
         }
     }
 
-    pub fn set_texture(&mut self, i: usize, typed_texture: BindableTexture<kind::TexSampled<F, D, MS>>) {
+    /// Create a [`BindableTextureArray`] from an existing [`wgpu::Texture`] array.
+    /// 
+    /// Note that this will **panic** if any supplied texture does not match the [`BindableTexture`]'s type signature,
+    /// or if the supplied texture array is longer than MAX_TEXTURES.
+    pub fn from_sampled(device: &wgpu::Device, textures: &[wgpu::Texture]) -> Self {
+        assert!(textures.len() < MAX_TEXTURES,
+            "Failed to create BindableTextureArray: provided texture array length ({}) was greater than COUNT ({}).", textures.len(), MAX_TEXTURES);
+        
+        // Using BindableTexture (singular) as a proxy to do the type checking automatically.
+        // Since BindableTexture is a Zero-Cost-Abstraction, it makes sense to use it. 
+        let mut textures_vec: Vec<wgpu::Texture> = vec![];
+        let mut views_vec = vec![];
+        for t in textures {
+            let bt = BindableTexture::<kind::TexSampled<F, D, MS>>::from_sampled(t);
+            textures_vec.push(bt.texture.clone());
+            views_vec.push(bt.view);
+        }
+
+        for _ in textures.len()..MAX_TEXTURES {
+            let bt = BindableTexture::<kind::TexSampled<F, D, MS>>::new_sampled(device, wgpu::Extent3d::default(), None);
+            textures_vec.push(bt.texture.clone());
+            views_vec.push(bt.view);
+        }
+
+        let views: Box<[wgpu::TextureView; MAX_TEXTURES]> = Box::new(views_vec.try_into().unwrap());
+        let refs: [&wgpu::TextureView; MAX_TEXTURES] = views.each_ref();
+        let refs_static: [&'static wgpu::TextureView; MAX_TEXTURES] =
+        unsafe { std::mem::transmute(refs) };
+
+        Self {
+            textures: textures_vec.try_into().unwrap(),
+            views,
+            view_refs: UnsafeCell::new(refs_static),
+            _kind: std::marker::PhantomData,
+        }
+    }
+
+    /// Sets a BindableTexture at index i using an existing [`wgpu::Texture`].
+    /// 
+    /// Note that this will **panic** if the supplied texture does not match the [`BindableTexture`]'s type signature.
+    pub fn set_texture(&mut self, i: usize, texture: &wgpu::Texture) {
+        let typed_texture: BindableTexture<kind::TexSampled<F, D, MS>> = BindableTexture::from_sampled(texture);
         self.textures[i] = typed_texture.texture;
         self.views[i] = typed_texture.view;
     }
 }
 
-impl<const COUNT: usize, F: fmt::TexFormat, A: access::StorageAccess, D: dim::Dimension>
-    BindableTextureArray<COUNT, kind::TexStorage<F, A, D>> {
+impl<const MAX_TEXTURES: usize, F: fmt::TexFormat, A: access::StorageAccess, D: dim::Dimension>
+    BindableTextureArray<MAX_TEXTURES, kind::TexStorage<F, A, D>> {
+    /// Create a [`BindableTextureArray`] where each [`wgpu::Texture`] has the specified size.
     pub fn new_storage(
         device: &wgpu::Device,
         size: wgpu::Extent3d,
         label: Option<&str>
     ) -> Self {
-        let mut textures  = Vec::with_capacity(COUNT);
-        let mut views_vec = Vec::with_capacity(COUNT);
-        for _ in 0..COUNT {
+        let mut textures  = Vec::with_capacity(MAX_TEXTURES);
+        let mut views_vec = Vec::with_capacity(MAX_TEXTURES);
+        for _ in 0..MAX_TEXTURES {
             let texture = device.create_texture(&wgpu::TextureDescriptor {
                 label,
                 size,
@@ -260,9 +410,9 @@ impl<const COUNT: usize, F: fmt::TexFormat, A: access::StorageAccess, D: dim::Di
             views_vec.push(view);
         }
 
-        let views: Box<[wgpu::TextureView; COUNT]> = Box::new(views_vec.try_into().unwrap());
-        let refs: [&wgpu::TextureView; COUNT] = views.each_ref();
-        let refs_static: [&'static wgpu::TextureView; COUNT] =
+        let views: Box<[wgpu::TextureView; MAX_TEXTURES]> = Box::new(views_vec.try_into().unwrap());
+        let refs: [&wgpu::TextureView; MAX_TEXTURES] = views.each_ref();
+        let refs_static: [&'static wgpu::TextureView; MAX_TEXTURES] =
             unsafe { std::mem::transmute(refs) };
 
         Self {
@@ -273,14 +423,54 @@ impl<const COUNT: usize, F: fmt::TexFormat, A: access::StorageAccess, D: dim::Di
         }
     }
 
+    /// Create a [`BindableTextureArray`] from an existing [`wgpu::Texture`] array.
+    /// 
+    /// Note that this will **panic** if any supplied texture does not match the [`BindableTexture`]'s type signature,
+    /// or if the supplied texture array is longer than MAX_TEXTURES.
+    pub fn from_sampled(device: &wgpu::Device, textures: &[wgpu::Texture]) -> Self {
+        assert!(textures.len() < MAX_TEXTURES,
+            "Failed to create BindableTextureArray: provided texture array length ({}) was greater than COUNT ({}).", textures.len(), MAX_TEXTURES);
+        
+        // Using BindableTexture (singular) as a proxy to do the type checking automatically.
+        // Since BindableTexture is a Zero-Cost-Abstraction, it makes sense to use it. 
+        let mut textures_vec: Vec<wgpu::Texture> = vec![];
+        let mut views_vec = vec![];
+        for t in textures {
+            let bt = BindableTexture::<kind::TexStorage<F, A, D>>::from_storage(t);
+            textures_vec.push(bt.texture.clone());
+            views_vec.push(bt.view);
+        }
 
-    pub fn set_texture(&mut self, i: usize, typed_texture: BindableTexture<kind::TexStorage<F, A, D>>) {
+        for _ in textures.len()..MAX_TEXTURES {
+            let bt = BindableTexture::<kind::TexStorage<F, A, D>>::new_storage(device, wgpu::Extent3d::default(), None);
+            textures_vec.push(bt.texture.clone());
+            views_vec.push(bt.view);
+        }
+
+        let views: Box<[wgpu::TextureView; MAX_TEXTURES]> = Box::new(views_vec.try_into().unwrap());
+        let refs: [&wgpu::TextureView; MAX_TEXTURES] = views.each_ref();
+        let refs_static: [&'static wgpu::TextureView; MAX_TEXTURES] =
+        unsafe { std::mem::transmute(refs) };
+
+        Self {
+            textures: textures_vec.try_into().unwrap(),
+            views,
+            view_refs: UnsafeCell::new(refs_static),
+            _kind: std::marker::PhantomData,
+        }
+    }
+
+    /// Sets a BindableTexture at index i using an existing [`wgpu::Texture`].
+    /// 
+    /// Note that this will **panic** if the supplied texture does not match the [`BindableTexture`]'s type signature.
+    pub fn set_texture(&mut self, i: usize, texture: &wgpu::Texture) {
+        let typed_texture: BindableTexture<kind::TexStorage<F, A, D>> = BindableTexture::from_storage(texture);
         self.textures[i] = typed_texture.texture;
         self.views[i] = typed_texture.view;
     }
 }
 
-impl<const COUNT: usize, Kind: kind::TextureKind> Index<usize> for BindableTextureArray<COUNT, Kind> {
+impl<const MAX_TEXTURES: usize, Kind: kind::TextureKind> Index<usize> for BindableTextureArray<MAX_TEXTURES, Kind> {
     type Output = wgpu::Texture;
 
     fn index(&self, index: usize) -> &Self::Output {
@@ -288,18 +478,18 @@ impl<const COUNT: usize, Kind: kind::TextureKind> Index<usize> for BindableTextu
     }
 }
 
-impl<const COUNT: usize, Kind: kind::TextureKind> BindableField for BindableTextureArray<COUNT, Kind> {
+impl<const MAX_TEXTURES: usize, Kind: kind::TextureKind> BindableField for BindableTextureArray<MAX_TEXTURES, Kind> {
     fn layout_entry(binding: u32, visibility: wgpu::ShaderStages) -> wgpu::BindGroupLayoutEntry {
         wgpu::BindGroupLayoutEntry {
             binding,
             visibility,
             ty: Kind::binding_type(),
-            count: std::num::NonZeroU32::new(COUNT as u32),
+            count: std::num::NonZeroU32::new(MAX_TEXTURES as u32),
         }
     }
 
     fn bind_group_entry(&self, binding: u32) -> wgpu::BindGroupEntry<'_> {
-        let refs: [&wgpu::TextureView; COUNT] = self.views.each_ref();
+        let refs: [&wgpu::TextureView; MAX_TEXTURES] = self.views.each_ref();
 
         unsafe {
             *self.view_refs.get() = std::mem::transmute(refs);
