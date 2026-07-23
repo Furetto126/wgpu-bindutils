@@ -132,7 +132,7 @@ impl<F: fmt::TexFormat, D: dim::Dimension, const MS: bool> BindableTexture<kind:
         Self { texture, view, _kind: std::marker::PhantomData, }
     }
 
-    /// Create a BindableTexture from an existing [`wgpu::Texture`].
+    /// Create a [`BindableTexture`] from an existing [`wgpu::Texture`].
     /// 
     /// Note that this will **panic** if the supplied texture does not match the [`BindableTexture`]'s type signature.
     pub fn from_sampled(texture: &wgpu::Texture) -> Self {
@@ -211,7 +211,7 @@ impl<F: fmt::TexFormat, A: access::StorageAccess, D: dim::Dimension> BindableTex
         }
     }
 
-    /// Create a BindableTexture from an existing [`wgpu::Texture`].
+    /// Create a [`BindableTexture`] from an existing [`wgpu::Texture`].
     /// 
     /// Note that this will **panic** if the supplied texture does not match the [`BindableTexture`]'s type signature.
     pub fn from_storage(texture: &wgpu::Texture) -> Self {
@@ -369,7 +369,7 @@ impl<const MAX_TEXTURES: usize, F: fmt::TexFormat, D: dim::Dimension, const MS: 
         }
     }
 
-    /// Sets a BindableTexture at index i using an existing [`wgpu::Texture`].
+    /// Sets a [`BindableTexture`] at index i using an existing [`wgpu::Texture`].
     /// 
     /// Note that this will **panic** if the supplied texture does not match the [`BindableTexture`]'s type signature.
     pub fn set_texture(&mut self, i: usize, texture: &wgpu::Texture) {
@@ -460,7 +460,7 @@ impl<const MAX_TEXTURES: usize, F: fmt::TexFormat, A: access::StorageAccess, D: 
         }
     }
 
-    /// Sets a BindableTexture at index i using an existing [`wgpu::Texture`].
+    /// Sets a [`BindableTexture`] at index i using an existing [`wgpu::Texture`].
     /// 
     /// Note that this will **panic** if the supplied texture does not match the [`BindableTexture`]'s type signature.
     pub fn set_texture(&mut self, i: usize, texture: &wgpu::Texture) {
