@@ -180,7 +180,7 @@ impl<F: fmt::TexFormat, D: dim::Dimension, const MS: bool> BindableTexture<kind:
         assert_eq!(texture.format(), F::FORMAT, "Texture format ({:?}) does not match TexSampled<F, ..>", texture.format());
         assert_eq!(texture.dimension(), D::physical_dimension(), "Texture dimension ({:?}) does not match TexSampled<.., D, ..>", texture.dimension());
         assert_eq!(texture.sample_count() > 1, MS, "Texture multisample state ({}) does not match TexSampled<.., MS>", texture.sample_count() > 1);
-        assert_eq!(texture.usage(), kind::TexSampled::<F, D, MS>::usage(), "Texture usage ({:?}) does not match TexSampled<F, D, MS>: {:?}", texture.usage(), kind::TexSampled::<F, D, MS>::usage());
+        assert!(texture.usage().contains(kind::TexSampled::<F, D, MS>::usage()), "Texture usage ({:?}) does not contain TexSampled<F, D, MS>: {:?}", texture.usage(), kind::TexSampled::<F, D, MS>::usage());
     }
 }
 
@@ -258,7 +258,7 @@ impl<F: fmt::TexFormat, A: access::StorageAccess, D: dim::Dimension> BindableTex
     fn check_validity(texture: &wgpu::Texture) {
         assert_eq!(texture.format(), F::FORMAT, "Texture format ({:?}) does not match TexStorage<F, ..>", texture.format());
         assert_eq!(texture.dimension(), D::physical_dimension(), "Texture dimension ({:?}) does not match TexStorage<.., D>", texture.dimension());
-        assert_eq!(texture.usage(), kind::TexStorage::<F, A, D>::usage(), "Texture usage ({:?}) does not match TexStorage<F, A, D> ({:?})", texture.usage(), kind::TexStorage::<F, A, D>::usage());
+        assert!(texture.usage().contains(kind::TexStorage::<F, A, D>::usage()), "Texture usage ({:?}) does not contain TexStorage<F, A, D> ({:?})", texture.usage(), kind::TexStorage::<F, A, D>::usage());
     }
 }
 
