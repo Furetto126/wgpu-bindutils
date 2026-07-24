@@ -110,7 +110,7 @@ pub struct BindableTexture<Kind: kind::TextureKind> {
 }
 
 impl<F: fmt::TexFormat, D: dim::Dimension, const MS: bool> BindableTexture<kind::TexSampled<F, D, MS>> {
-    /// Create a [`BindableTexture`] with a specified size.
+    /// Creates a [`BindableTexture`] with a specified size.
     pub fn new_sampled(device: &wgpu::Device, size: wgpu::Extent3d, label: Option<&str>) -> Self {
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             label,
@@ -132,7 +132,7 @@ impl<F: fmt::TexFormat, D: dim::Dimension, const MS: bool> BindableTexture<kind:
         Self { texture, view, _kind: std::marker::PhantomData, }
     }
 
-    /// Create a [`BindableTexture`] from an existing [`wgpu::Texture`].
+    /// Creates a [`BindableTexture`] from an existing [`wgpu::Texture`].
     /// 
     /// Note that this will **panic** if the supplied texture does not match the [`BindableTexture`]'s type signature.
     pub fn from_sampled(texture: &wgpu::Texture) -> Self {
@@ -185,7 +185,7 @@ impl<F: fmt::TexFormat, D: dim::Dimension, const MS: bool> BindableTexture<kind:
 }
 
 impl<F: fmt::TexFormat, A: access::StorageAccess, D: dim::Dimension> BindableTexture<kind::TexStorage<F, A, D>> {
-    /// Create a [`BindableTexture`] with a specified size.
+    /// Creates a [`BindableTexture`] with a specified size.
     pub fn new_storage(device: &wgpu::Device, size: wgpu::Extent3d, label: Option<&str>) -> Self {
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             label,
@@ -211,7 +211,7 @@ impl<F: fmt::TexFormat, A: access::StorageAccess, D: dim::Dimension> BindableTex
         }
     }
 
-    /// Create a [`BindableTexture`] from an existing [`wgpu::Texture`].
+    /// Creates a [`BindableTexture`] from an existing [`wgpu::Texture`].
     /// 
     /// Note that this will **panic** if the supplied texture does not match the [`BindableTexture`]'s type signature.
     pub fn from_storage(texture: &wgpu::Texture) -> Self {
@@ -290,7 +290,7 @@ pub struct BindableTextureArray<const MAX_TEXTURES: usize, Kind: kind::TextureKi
 
 impl<const MAX_TEXTURES: usize, F: fmt::TexFormat, D: dim::Dimension, const MS: bool>
     BindableTextureArray<MAX_TEXTURES, kind::TexSampled<F, D, MS>> {
-    /// Create a [`BindableTextureArray`] where each [`wgpu::Texture`] has the specified size.
+    /// Creates a [`BindableTextureArray`] where each [`wgpu::Texture`] has the specified size.
     pub fn new_sampled(
         device: &wgpu::Device,
         size: wgpu::Extent3d,
@@ -332,13 +332,13 @@ impl<const MAX_TEXTURES: usize, F: fmt::TexFormat, D: dim::Dimension, const MS: 
         }
     }
 
-    /// Create a [`BindableTextureArray`] from an existing [`wgpu::Texture`] array.
+    /// Creates a [`BindableTextureArray`] from an existing [`wgpu::Texture`] array.
     /// 
     /// Note that this will **panic** if any supplied texture does not match the [`BindableTexture`]'s type signature,
-    /// or if the supplied texture array is longer than MAX_TEXTURES.
+    /// or if the supplied [`wgpu::Texture`] array is longer than MAX_TEXTURES.
     pub fn from_sampled(device: &wgpu::Device, textures: &[wgpu::Texture]) -> Self {
         assert!(textures.len() < MAX_TEXTURES,
-            "Failed to create BindableTextureArray: provided texture array length ({}) was greater than COUNT ({}).", textures.len(), MAX_TEXTURES);
+            "Failed to create BindableTextureArray: provided texture array length ({}) was greater than MAX_TEXTURES ({MAX_TEXTURES}).", textures.len());
         
         // Using BindableTexture (singular) as a proxy to do the type checking automatically.
         // Since BindableTexture is a Zero-Cost-Abstraction, it makes sense to use it. 
@@ -381,7 +381,7 @@ impl<const MAX_TEXTURES: usize, F: fmt::TexFormat, D: dim::Dimension, const MS: 
 
 impl<const MAX_TEXTURES: usize, F: fmt::TexFormat, A: access::StorageAccess, D: dim::Dimension>
     BindableTextureArray<MAX_TEXTURES, kind::TexStorage<F, A, D>> {
-    /// Create a [`BindableTextureArray`] where each [`wgpu::Texture`] has the specified size.
+    /// Creates a [`BindableTextureArray`] where each [`wgpu::Texture`] has the specified size.
     pub fn new_storage(
         device: &wgpu::Device,
         size: wgpu::Extent3d,
@@ -423,13 +423,13 @@ impl<const MAX_TEXTURES: usize, F: fmt::TexFormat, A: access::StorageAccess, D: 
         }
     }
 
-    /// Create a [`BindableTextureArray`] from an existing [`wgpu::Texture`] array.
+    /// Creates a [`BindableTextureArray`] from an existing [`wgpu::Texture`] array.
     /// 
     /// Note that this will **panic** if any supplied texture does not match the [`BindableTexture`]'s type signature,
-    /// or if the supplied texture array is longer than MAX_TEXTURES.
+    /// or if the supplied [`wgpu::Texture`] array is longer than MAX_TEXTURES.
     pub fn from_sampled(device: &wgpu::Device, textures: &[wgpu::Texture]) -> Self {
         assert!(textures.len() < MAX_TEXTURES,
-            "Failed to create BindableTextureArray: provided texture array length ({}) was greater than COUNT ({}).", textures.len(), MAX_TEXTURES);
+            "Failed to create BindableTextureArray: provided texture array length ({}) was greater than MAX_TEXTURES ({MAX_TEXTURES}).", textures.len());
         
         // Using BindableTexture (singular) as a proxy to do the type checking automatically.
         // Since BindableTexture is a Zero-Cost-Abstraction, it makes sense to use it. 

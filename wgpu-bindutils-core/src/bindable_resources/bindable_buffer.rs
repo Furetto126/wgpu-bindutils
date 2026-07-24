@@ -42,7 +42,7 @@ pub struct BindableBuffer<T: NoUninit, Kind = BufUniform> {
 }
 
 impl<T: bytemuck::NoUninit, Kind: BufferKind> BindableBuffer<T, Kind> {
-    /// Create a [`BindableBuffer`] from a specified value.
+    /// Creates a [`BindableBuffer`] from a specified value.
     pub fn new(device: &wgpu::Device, value: T) -> Self {
         let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
@@ -57,7 +57,7 @@ impl<T: bytemuck::NoUninit, Kind: BufferKind> BindableBuffer<T, Kind> {
         }
     }
 
-    /// Create a [`BindableBuffer`] from an existing [`wgpu::Buffer`].
+    /// Creates a [`BindableBuffer`] from an existing [`wgpu::Buffer`].
     /// 
     /// Note that this will **panic** if the supplied buffer does not match the [`BindableBuffer`]'s type signature.<br>
     /// This function does not check that the provided current value is actually the one stored in the [`wgpu::Buffer`].
@@ -118,7 +118,7 @@ pub struct BindableBufferVector<T: NoUninit, Kind = BufUniform> {
 }
 
 impl<T: bytemuck::NoUninit, Kind: BufferKind> BindableBufferVector<T, Kind> {
-    /// Create a [`BindableBufferVector`] from a specified value.
+    /// Creates a [`BindableBufferVector`] from a specified value.
     pub fn new(device: &wgpu::Device, value: Vec<T>) -> Self {
         let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
@@ -133,7 +133,7 @@ impl<T: bytemuck::NoUninit, Kind: BufferKind> BindableBufferVector<T, Kind> {
         }
     }
 
-    /// Create a [`BindableBufferVector`] from an existing [`wgpu::Buffer`].
+    /// Creates a [`BindableBufferVector`] from an existing [`wgpu::Buffer`].
     /// 
     /// Note that this will **panic** if the supplied buffer does not match the [`BindableBufferVector`]'s type signature and the supplied vector length.<br>
     /// This function does not check that the provided current value is actually the one stored in the [`wgpu::Buffer`].

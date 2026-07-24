@@ -1,4 +1,4 @@
-use std::collections::{BTreeSet, HashSet};
+use std::collections::BTreeSet;
 
 use proc_macro::TokenStream;
 use proc_macro_crate::{FoundCrate, crate_name};
@@ -20,6 +20,8 @@ pub fn bindable_struct_derive(input: TokenStream) -> TokenStream {
         .into()
 }
 
+// Maybe this check can be relaxed, allowing for custom implementations
+// of the BindableField trait.
 const BINDABLE_TYPES: &[&str] = &[
     "BindableBuffer", "BindableTexture", "BindableSampler",
     "BindableBufferVector", "BindableTextureArray", "BindableSamplerArray"
