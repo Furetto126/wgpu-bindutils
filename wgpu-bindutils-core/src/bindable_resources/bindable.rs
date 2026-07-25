@@ -1,4 +1,4 @@
-/// The basic trait that types which want to partecipate in a [`BindableStruct`] must implement.<br>
+/// The basic trait that types which want to participate in a [`BindableStruct`] must implement.<br>
 /// This exposes a function <code>layout_entry</code> which statically returns a [`wgpu::BindGroupLayoutEntry`],<br>
 /// and another function <code>bind_group_entry</code> which uses the instance to return a [`wgpu::BindGroupEntry`].
 pub trait BindableField {
