@@ -8,6 +8,3 @@ pollster = "1.0.1"
 trybuild = "1.0.118"
 wgpu = "30.0.0"
 wgpu-bindutils = { path = "../wgpu-bindutils"}
-
-[lints.rust]
-warnings = "allow"
