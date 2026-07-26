@@ -9,3 +9,6 @@ wgpu = { workspace = true, default-features = true }
 wgpu-bindutils = { workspace = true }
 pollster = "1.0.1"
 trybuild = "1.0.118"
+
+[package.metadata.release]
+release = false
