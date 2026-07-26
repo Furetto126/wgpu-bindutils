@@ -77,7 +77,7 @@ impl<T: bytemuck::NoUninit, Kind: BufferKind> BindableBuffer<T, Kind> {
         self.value = value;
     }
 
-    // Check validity
+    // Assert validity
     fn check_validity(buffer: &wgpu::Buffer) {
         let expected_size = std::mem::size_of::<T>();
         assert_eq!(buffer.size(), expected_size as u64,

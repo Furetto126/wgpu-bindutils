@@ -10,7 +10,7 @@ authors.workspace = true
 proc-macro = true
 
 [dependencies]
-wgpu-bindutils-core = { path = "../wgpu-bindutils-core", version = "0.2.1" }
+wgpu-bindutils-core = { workspace = true }
 darling = "0.23.0"
 proc-macro2 = "1.0.106"
 quote = "1.0.46"

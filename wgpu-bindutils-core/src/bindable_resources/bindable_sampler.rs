@@ -144,7 +144,7 @@ impl<const MAX_SAMPLERS: usize, Kind: SamplerKind> BindableSamplerArray<MAX_SAMP
         }
     }
 
-    /// Creates a [`BindableSamplerArray`] from an existing [`wgpu::Sampler`] array.
+    /// Creates a [`BindableSamplerArray`] from an existing [`wgpu::Sampler`] vector.
     /// 
     /// # Correctness concerns
     /// This function is marked *unsafe* because currently there is no way
@@ -154,8 +154,8 @@ impl<const MAX_SAMPLERS: usize, Kind: SamplerKind> BindableSamplerArray<MAX_SAMP
     /// However, based on how the resulting [`BindableSampler`]s are used, [`wgpu`] may throw validation errors
     /// as soon as the mismatch is noticed.
     /// 
-    /// Note that this will *panic* if the supplied [`wgpu::Sampler`] array is longer than MAX_SAMPLERS.
-    pub unsafe fn from_samplers(device: &wgpu::Device, samplers: &[wgpu::Sampler]) -> Self {
+    /// Note that this will *panic* if the supplied [`wgpu::Sampler`] vector is longer than MAX_SAMPLERS.
+    pub unsafe fn from_samplers(device: &wgpu::Device, samplers: &Vec<wgpu::Sampler>) -> Self {
         assert!(samplers.len() < MAX_SAMPLERS,
             "Failed to create BindableSamplerArray: provided sampler array length ({}) was greater than MAX_SAMPLERS ({MAX_SAMPLERS})", samplers.len());
         

@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+wgpu = { workspace = true, default-features = true }
+wgpu-bindutils = { workspace = true }
 pollster = "1.0.1"
 trybuild = "1.0.118"
-wgpu = "30.0.0"
-wgpu-bindutils = { path = "../wgpu-bindutils", version = "0.2.1"}

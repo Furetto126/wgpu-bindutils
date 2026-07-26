@@ -332,11 +332,11 @@ impl<const MAX_TEXTURES: usize, F: fmt::TexFormat, D: dim::Dimension, const MS: 
         }
     }
 
-    /// Creates a [`BindableTextureArray`] from an existing [`wgpu::Texture`] array.
+    /// Creates a [`BindableTextureArray`] from an existing [`wgpu::Texture`] vector.
     /// 
     /// Note that this will **panic** if any supplied texture does not match the [`BindableTexture`]'s type signature,
     /// or if the supplied [`wgpu::Texture`] array is longer than MAX_TEXTURES.
-    pub fn from_sampled(device: &wgpu::Device, textures: &[wgpu::Texture]) -> Self {
+    pub fn from_sampled(device: &wgpu::Device, textures: &Vec<wgpu::Texture>) -> Self {
         assert!(textures.len() < MAX_TEXTURES,
             "Failed to create BindableTextureArray: provided texture array length ({}) was greater than MAX_TEXTURES ({MAX_TEXTURES}).", textures.len());
         
@@ -423,11 +423,11 @@ impl<const MAX_TEXTURES: usize, F: fmt::TexFormat, A: access::StorageAccess, D: 
         }
     }
 
-    /// Creates a [`BindableTextureArray`] from an existing [`wgpu::Texture`] array.
+    /// Creates a [`BindableTextureArray`] from an existing [`wgpu::Texture`] vector.
     /// 
     /// Note that this will **panic** if any supplied texture does not match the [`BindableTexture`]'s type signature,
     /// or if the supplied [`wgpu::Texture`] array is longer than MAX_TEXTURES.
-    pub fn from_storage(device: &wgpu::Device, textures: &[wgpu::Texture]) -> Self {
+    pub fn from_storage(device: &wgpu::Device, textures: &Vec<wgpu::Texture>) -> Self {
         assert!(textures.len() < MAX_TEXTURES,
             "Failed to create BindableTextureArray: provided texture array length ({}) was greater than MAX_TEXTURES ({MAX_TEXTURES}).", textures.len());
         

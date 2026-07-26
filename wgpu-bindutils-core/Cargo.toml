@@ -8,5 +8,5 @@ repository.workspace = true
 authors.workspace = true
 
 [dependencies]
-bytemuck = "1.25.1"
-wgpu = { version = "30.0.0", default-features = false}
+bytemuck = { workspace = true }
+wgpu = { workspace = true }
