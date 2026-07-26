@@ -8,15 +8,15 @@ members = [
 ]
 
 [workspace.package]
-version = "0.2.2"
+version = "0.2.3"
 edition = "2024"
 license = "MIT"
 repository = "https://github.com/Furetto126/wgpu-bindutils.git"
 authors = ["Furetto126"]
 
 [workspace.dependencies]
-wgpu-bindutils-core = { path = "wgpu-bindutils-core", version = "0.2.2" }
-wgpu-bindutils-macro = { path = "wgpu-bindutils-macro", version = "0.2.2" }
-wgpu-bindutils = { path = "wgpu-bindutils", version = "0.2.2" }
+wgpu-bindutils-core = { path = "wgpu-bindutils-core", version = "0.2.3" }
+wgpu-bindutils-macro = { path = "wgpu-bindutils-macro", version = "0.2.3" }
+wgpu-bindutils = { path = "wgpu-bindutils", version = "0.2.3" }
 wgpu = { version = "30.0.0", default-features = false }
 bytemuck = "1.25.2"
