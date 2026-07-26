@@ -7,4 +7,4 @@ edition = "2024"
 pollster = "1.0.1"
 trybuild = "1.0.118"
 wgpu = "30.0.0"
-wgpu-bindutils = { path = "../wgpu-bindutils", version = "0.2.0"}
+wgpu-bindutils = { path = "../wgpu-bindutils", version = "0.2.1"}
