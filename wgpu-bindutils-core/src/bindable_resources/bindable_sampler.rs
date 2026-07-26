@@ -156,7 +156,7 @@ impl<const MAX_SAMPLERS: usize, Kind: SamplerKind> BindableSamplerArray<MAX_SAMP
     /// 
     /// Note that this will *panic* if the supplied [`wgpu::Sampler`] vector is longer than MAX_SAMPLERS.
     pub unsafe fn from_samplers(device: &wgpu::Device, samplers: &Vec<wgpu::Sampler>) -> Self {
-        assert!(samplers.len() < MAX_SAMPLERS,
+        assert!(samplers.len() <= MAX_SAMPLERS,
             "Failed to create BindableSamplerArray: provided sampler array length ({}) was greater than MAX_SAMPLERS ({MAX_SAMPLERS})", samplers.len());
         
         let mut samplers_vec: Vec<wgpu::Sampler> = vec![];
